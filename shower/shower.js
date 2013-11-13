@@ -42,7 +42,7 @@ window.shower = window.shower || (function(window, document, undefined) {
 		},
 
 		isLast : function() {
-			return shower.slideList.length === this.number + 1
+			return shower.slideList.length === this.number + 1;
 		},
 
 		/**
@@ -599,7 +599,7 @@ window.shower = window.shower || (function(window, document, undefined) {
 	/**
 	* Get current slide number. Starts from zero. Warning: when you have
 	* slide number 1 in URL this method will return 0.
-	* If something is wrong return -1.
+	* If something is wrong return 0 to get the first slide.
 	* @returns {Number}
 	*/
 	shower.getCurrentSlideNumber = function() {
@@ -614,7 +614,7 @@ window.shower = window.shower || (function(window, document, undefined) {
 			}
 		}
 
-		return -1;
+		return 0;
 	};
 
 	/**
@@ -632,11 +632,6 @@ window.shower = window.shower || (function(window, document, undefined) {
 
 		if (shower.isSlideMode()) {
 			throw new Error('You can\'t scroll to because you in slide mode. Please, switch to list mode.');
-		}
-
-		// @TODO: WTF?
-		if (-1 === slideNumber) {
-			return ret;
 		}
 
 		if (shower.slideList[slideNumber]) {
@@ -721,10 +716,10 @@ window.shower = window.shower || (function(window, document, undefined) {
 	};
 
 	/**
-	* Clear presenter notes in console.
+	* Clear presenter notes in console (only for Slide Mode).
 	*/
 	shower.clearPresenterNotes = function() {
-		if (window.console && window.console.clear) {
+		if (shower.isSlideMode() && window.console && window.console.clear) {
 			console.clear();
 		}
 	};
@@ -774,6 +769,38 @@ window.shower = window.shower || (function(window, document, undefined) {
 		return '#' + shower.slideList[slideNumber].id;
 	};
 
+	/**
+	 * Wheel event listener
+	 * @param e event
+	 */
+	shower.wheel = function (e) {
+		var body = document.querySelector('body'),
+			wheelDown,
+			lockedWheel = body.getAttribute('data-scroll') === 'locked';
+
+		if (!lockedWheel && !shower.isListMode()) {
+			body.setAttribute('data-scroll', 'locked');
+
+			if (e.deltaY === undefined) {
+				// Chrome, Opera, Safari
+				wheelDown = e.wheelDeltaY < 0;
+			} else {
+				// Firefox
+				wheelDown = e.deltaY > 0;
+			}
+
+			if (wheelDown) {
+				shower._turnNextSlide();
+			} else {
+				shower._turnPreviousSlide();
+			}
+
+			setTimeout(function () {
+				body.setAttribute('data-scroll', 'unlocked');
+			}, 200);
+		}
+	}
+
 	// Event handlers
 
 	window.addEventListener('DOMContentLoaded', function() {
@@ -798,30 +825,34 @@ window.shower = window.shower || (function(window, document, undefined) {
 	}, false);
 
 	document.addEventListener('keydown', function(e) {
-		var currentSlideNumber,
-			slide;
-
-		// Shortcut for alt, ctrl and meta keys
-		if (e.altKey || e.ctrlKey || e.metaKey) { return; }
-
-		currentSlideNumber = shower.getCurrentSlideNumber();
-		slide = shower.slideList[currentSlideNumber];
+		var currentSlideNumber = shower.getCurrentSlideNumber(),
+			slide = shower.slideList[currentSlideNumber],
+			slideNumber;
 
 		switch (e.which) {
-			case 116: // F5
-				e.preventDefault();
+			case 80: // P Alt Cmd
+				if (shower.isListMode() && e.altKey && e.metaKey) {
+					e.preventDefault();
 
-				if (shower.isListMode()) {
-					var slideNumber = e.shiftKey ? currentSlideNumber : 0,
-						slide;
+					slideNumber = slide.number;
 
-					// Warning: go must be before enterSlideMode.
-					// Otherwise there is a bug in Chrome
 					shower.go(slideNumber);
 					shower.enterSlideMode();
 					shower.showPresenterNotes(slideNumber);
 
-					slide = shower.slideList[currentSlideNumber];
+					slide.timing && slide.initTimer(shower);
+				}
+			break;
+
+			case 116: // F5 (Shift)
+				e.preventDefault();
+				if (shower.isListMode()) {
+					slideNumber = e.shiftKey ? slide.number : 0;
+
+					shower.go(slideNumber);
+					shower.enterSlideMode();
+					shower.showPresenterNotes(slideNumber);
+
 					slide.timing && slide.initTimer(shower);
 				} else {
 					shower.enterListMode();
@@ -829,14 +860,13 @@ window.shower = window.shower || (function(window, document, undefined) {
 			break;
 
 			case 13: // Enter
-				if (shower.isListMode() && -1 !== currentSlideNumber) {
+				if (shower.isListMode()) {
 					e.preventDefault();
+
 					shower.enterSlideMode();
 					shower.showPresenterNotes(currentSlideNumber);
 
-					if (slide.timing) {
-						slide.initTimer(shower);
-					}
+					slide.timing && slide.initTimer(shower);
 				}
 			break;
 
@@ -852,6 +882,7 @@ window.shower = window.shower || (function(window, document, undefined) {
 			case 37: // Left
 			case 72: // H
 			case 75: // K
+				if (e.altKey || e.ctrlKey || e.metaKey) { return; }
 				e.preventDefault();
 				shower._turnPreviousSlide();
 			break;
@@ -861,6 +892,7 @@ window.shower = window.shower || (function(window, document, undefined) {
 			case 39: // Right
 			case 76: // L
 			case 74: // J
+				if (e.altKey || e.ctrlKey || e.metaKey) { return; }
 				e.preventDefault();
 				shower._turnNextSlide();
 			break;
@@ -872,12 +904,11 @@ window.shower = window.shower || (function(window, document, undefined) {
 
 			case 35: // End
 				e.preventDefault();
-
 				shower.last();
 			break;
 
-			case 9: // Tab = +1; Shift + Tab = -1
-			case 32: // Space = +1; Shift + Space = -1
+			case 9: // Tab (Shift)
+			case 32: // Space (Shift)
 				e.preventDefault();
 				shower[e.shiftKey ? '_turnPreviousSlide' : '_turnNextSlide']();
 			break;
@@ -890,11 +921,13 @@ window.shower = window.shower || (function(window, document, undefined) {
 	shower.init();
 
 	document.addEventListener('click', function(e) {
-		var slideNumber = shower.getSlideNumber(shower._getSlideIdByEl(e.target)),
+		var slideId = shower._getSlideIdByEl(e.target),
+			slideNumber,
 			slide;
 
 		// Click on slide in List mode
-		if (shower.isListMode() && shower._getSlideIdByEl(e.target)) {
+		if (slideId && shower.isListMode()) {
+			slideNumber = shower.getSlideNumber(slideId);
 			// Warning: go must be before enterSlideMode.
 			// Otherwise there is a bug in Chrome
 			shower.go(slideNumber);
@@ -909,11 +942,12 @@ window.shower = window.shower || (function(window, document, undefined) {
 	}, false);
 
 	document.addEventListener('touchstart', function(e) {
-		var slideNumber = shower.getSlideNumber(shower._getSlideIdByEl(e.target)),
+		var slideId = shower._getSlideIdByEl(e.target),
+			slideNumber,
 			slide,
 			x;
 
-		if (shower._getSlideIdByEl(e.target)) {
+		if (slideId) {
 			if (shower.isSlideMode() && ! shower._checkInteractiveElement(e)) {
 				x = e.touches[0].pageX;
 
@@ -925,9 +959,10 @@ window.shower = window.shower || (function(window, document, undefined) {
 			}
 
 			if (shower.isListMode()) {
+				slideNumber = shower.getSlideNumber(slideId);
 				// Warning: go must be before enterSlideMode.
 				// Otherwise there is a bug in Chrome
-				shower.go(shower.getSlideNumber(shower._getSlideIdByEl(e.target)));
+				shower.go(slideNumber);
 				shower.enterSlideMode();
 				shower.showPresenterNotes(slideNumber);
 
@@ -945,6 +980,10 @@ window.shower = window.shower || (function(window, document, undefined) {
 			e.preventDefault();
 		}
 	}, false);
+
+	document.addEventListener('wheel', shower.wheel, false);
+
+	document.addEventListener('mousewheel', shower.wheel, false);
 
 	return shower;
 

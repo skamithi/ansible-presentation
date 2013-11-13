@@ -231,6 +231,25 @@ a {
 				}
 			}
 		}
+	// Table
+	table {
+		margin:0 0 50px;
+		width:100%;
+		border-collapse:collapse;
+		border-spacing:0;
+		th, td {
+			background:url($dot) 0 100% repeat-x;
+			}
+		th {
+			text-align:left;
+			font-weight:bold;
+			}
+		&.striped {
+			tr:nth-child(even) {
+				background:#EEE;
+				}
+			}
+		}
 	// Cover Shout
 	&.cover,
 	&.shout {
@@ -244,7 +263,7 @@ a {
 		background:#000;
 		@mixin cover {
 			img, svg, video,
-			object, canvas {
+			object, canvas, iframe {
 				@content;
 				}
 			}
@@ -482,6 +501,25 @@ a {
 			// Current
 			&:target {
 				margin:0;
+				}
+			// Shout
+			&.shout {
+				&.grow, &.shrink {
+					h2 {
+						opacity:0;
+						@include transition(all 0.4s ease-out);
+						}
+					&:target h2 {
+						opacity:1;
+						@include transform(scale(1) translateY(-50%));
+						}
+					}
+				&.grow h2 {
+					@include transform(scale(0.1) translateY(-50%));
+					}
+				&.shrink h2 {
+					@include transform(scale(10) translateY(-50%));
+					}
 				}
 			}
 		// Progress
