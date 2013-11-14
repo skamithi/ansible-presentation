@@ -43,7 +43,7 @@
         line-height: 0.8em;
         display: block;
         padding-bottom: 0.5em;
-        color: #CCC;
+        color: #939393;
       }
       .red {
         color: red;
@@ -60,9 +60,10 @@
     </header>
     <section class="slide cover" id="Cover"><div>
       <h2>Ansible Basics</h2>
-      <p>Forked from <a href="https://github.com/chadoh">chadoh</a>, from <a href="http://www.pipelinedeals.com">PipelineDeals</a></p>
-      <p>With a few modifications by <a
-        href="https://github.com/skamithi">Stanley Karunditu</a></p>
+      <p>Forked from <a href="https://github.com/chadoh/ansible-presentation">chadoh</a>.
+      <p>Presented by <a
+        href="https://github.com/skamithi/ansible-presentation">Stanley
+        Karunditu</a> for the Durham LUG</p>
 
       <img src="pictures/cover.png" alt="">
       <!-- This photo is album art! http://sovarozum.bandcamp.com/track/skirmish-the-enemys-gate-is-down -->
@@ -134,23 +135,35 @@
               <h2>Ansible vs Chef/Puppet</h2>
               <table>
                 <tr>
-                  <th scope="col"></th>
-                  <th>Client Agent</th>
-                  <th>Use Raw SSH</th>
-                  <th><span>Abstract Common Tasks</span><span
+                  <th scope='col'></th>
+                  <th> Ansible</th>
+                  <th> Puppet/Chef </th>
+                </tr>
+                <tr>
+                  <th scope="row">Client Agent </th>
+                  <td>No</th>
+                  <td>Yes</th>
+                </tr>
+                <tr>
+                  <th scope="row">Use Raw SSH</th>
+                  <td>Yes</td>
+                  <td>No</td>
+                </tr>
+                <tr>
+                  <th scope="row"><span>Abstract Common Tasks</span><span
                       class='italicextra'>example: install pkg</span></th>
-                </tr>
-                <tr>
-                  <th scope="row">Puppet/Chef</th>
-                  <td>Yes</td>
                   <td>No</td>
                   <td>Yes</td>
                 </tr>
                 <tr>
-                  <th scope="row">Ansible</th>
+                  <th scope='row'>Database Required</th>
                   <td>No</td>
                   <td>Yes</td>
-                  <td>No</td>
+                </tr>
+                <tr>
+                  <th scope='row'>Supports Pull Model</th>
+                  <td>Yes</td>
+                  <td>Yes</td>
                 </tr>
 
               </table>
